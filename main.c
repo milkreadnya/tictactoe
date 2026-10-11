@@ -119,9 +119,12 @@ int main(){
 
 
     clear_terminal();
-    puts("Enter size of the board (2-1000):");
-    scanf("%u", &size);
-    
+    while (true) {
+        puts("Enter size of the board (2-1000):");
+        if (scanf("%u", &size) != 1 || size < 2 || size > 1000) {
+            puts("Invalid size");
+        } else break;
+    }
     unsigned board_state[size][size];
     
     memset(board_state, 0, sizeof(board_state));
@@ -131,14 +134,15 @@ int main(){
         draw_board(size, board_state);
 
         unsigned user_x = 0, user_y = 0;
-        puts("Enter you move coordinates (x:y):");
+        puts("Enter you move coordinates (x y):");
 
         while(true){
             scanf("%u %u", &user_x, &user_y);
 
             if((user_x != 0 && user_y != 0) && (user_y <= size && user_x <= size)){ // Прием координат с единицы
-                if(board_state[user_y - 1][user_x - 1] == 0){ // У тебя в двумерном массиве сначала выбор строки потом столбца, поэтому по сути стейт имеет вид state[y][x]
-                    board_state[user_y - 1][user_x - 1] = 1;
+                --user_y; --user_x;
+                if(board_state[user_y][user_x] == 0){ // У тебя в двумерном массиве сначала выбор строки потом столбца, поэтому по сути стейт имеет вид state[y][x]
+                    board_state[user_y][user_x] = 1;
                     break;
                 }
                 else{
