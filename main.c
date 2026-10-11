@@ -1,98 +1,100 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <time.h>
 
-
-
-unsigned g_prng_state = 0x4AF7484Bu;
-typedef enum { ONGOING, PLAYER_WIN, BOT_WIN, DRAW } GameState;
 
 
 void draw_board(unsigned size, unsigned state[size][size]){
-    for(unsigned x = 0; x < size; x++){
-        for(unsigned y = 0; y < size; y++){
+    for(unsigned row = 0; row < size; row++){
+        for(unsigned col = 0; col < size; col++){
             // вывод
-            switch(state[x][y]){
+            switch(state[row][col]){
                 case 1:
-                    printf("%c ", 'X');
+                    putchar('X');
+                    putchar(' ');
                     break;
                 case 2:
-                    printf("%c ", '0');
+                    putchar('0');
+                    putchar(' ');
                     break;
                 default:
-                    printf("%c ", '.');
+                    putchar('.');
+                    putchar(' ');
             }
 
         }
-        printf("\n");
+        putchar('\n');
     }
 }
 
 void clear_terminal(){
     printf("\033[H\033[2J");
+    fflush(stdout);
 }
 
 int prng(unsigned size){
-    g_prng_state = (0xB7BF48FFu * g_prng_state + 0x133B7101u);
-    return (g_prng_state >> 16) % size;
+    return rand() % size;
 }
 
+// 0 — нет конца, 1 — победил игрок, 2 — победил бот - вайбкод
 int is_end(unsigned size, unsigned state[size][size]) {
-    for (unsigned x = 0; x < size; x++) {
-        unsigned first = state[x][0];
+    for (unsigned row = 0; row < size; row++) {
+        unsigned first = state[row][0];
         if (first == 0) continue;
-        
+
         int win = 1;
-        for (unsigned y = 1; y < size; y++) {
-            if (state[x][y] != first) {
+        for (unsigned col = 1; col < size; col++) {
+            if (state[row][col] != first) {
                 win = 0;
                 break;
             }
         }
-        if (win) return 1;
+        if (win) return first;
     }
-    for (unsigned y = 0; y < size; y++) {
-        unsigned first = state[0][y];
+    for (unsigned col = 0; col < size; col++) {
+        unsigned first = state[0][col];
         if (first == 0) continue;
-        
+
         int win = 1;
-        for (unsigned x = 1; x < size; x++) {
-            if (state[x][y] != first) {
+        for (unsigned row = 1; row < size; row++) {
+            if (state[row][col] != first) {
                 win = 0;
                 break;
             }
         }
-        if (win) return 1;
+        if (win) return first;
     }
     unsigned first = state[0][0];
     if (first != 0) {
         int win = 1;
-        for (unsigned x = 1; x < size; x++) {
-            if (state[x][x] != first) {
+        for (unsigned i = 1; i < size; i++) {
+            if (state[i][i] != first) {
                 win = 0;
                 break;
             }
         }
-        if (win) return 1;
+        if (win) return first;
     }
     first = state[0][size - 1];
     if (first != 0) {
         int win = 1;
-        for (unsigned x = 1; x < size; x++) {
-            if (state[x][size - 1 - x] != first) {
+        for (unsigned i = 1; i < size; i++) {
+            if (state[i][size - 1 - i] != first) {
                 win = 0;
                 break;
             }
         }
-        if (win) return 1;
+        if (win) return first;
     }
     return 0;
 }
 
 int is_draw(unsigned size, unsigned state[size][size]){
-    for(unsigned x = 0; x < size; x++){
-        for(unsigned y = 0; y < size; y++){
-            if(state[x][y] == 0){
+    for(unsigned row = 0; row < size; row++){
+        for(unsigned col = 0; col < size; col++){
+            if(state[row][col] == 0){
                 return 0;
             }
         }
@@ -100,36 +102,40 @@ int is_draw(unsigned size, unsigned state[size][size]){
     return 1;
 }
 
-void bot_move(unsigned size, unsigned state[size][size]) {
+void bot_move(unsigned size, unsigned state[size][size]){
     unsigned free_count = 0;
-    for (unsigned i = 0; i < size; i++)
-        for (unsigned j = 0; j < size; j++)
-            if (state[i][j] == 0) free_count++;
+    for (unsigned row = 0; row < size; row++)
+        for (unsigned col = 0; col < size; col++)
+            if (state[row][col] == 0) free_count++;
+
     if (free_count == 0) return;
 
     unsigned pick = prng(free_count);
-    for (unsigned i = 0; i < size; i++)
-        for (unsigned j = 0; j < size; j++)
-            if (state[i][j] == 0 && pick-- == 0) {
-                state[i][j] = 2;
+    for (unsigned row = 0; row < size; row++)
+        for (unsigned col = 0; col < size; col++)
+            if (state[row][col] == 0 && pick-- == 0) {
+                state[row][col] = 2;
                 return;
             }
 }
 
 int main(){
-    
+
+    srand(time(NULL));
+
     unsigned size = 0;
-    bool ended = 0;
+    bool ended = false;
 
 
     clear_terminal();
-    while (true) {
-        puts("Enter size of the board (2-1000):");
-        if (scanf("%u", &size) != 1 || size < 2 || size > 1000) {
-            puts("Invalid size");
-        } else break;
+    puts("Enter size of the board (2-1000):");
+    if (scanf("%u", &size) != 1 || size < 2 || size > 1000) {
+        puts("Wrong size");
+        return 1;
     }
+
     unsigned board_state[size][size];
+
     memset(board_state, 0, sizeof(board_state));
 
     while(!ended){
@@ -140,12 +146,16 @@ int main(){
         puts("Enter you move coordinates (x y):");
 
         while(true){
-            scanf("%u %u", &user_x, &user_y);
+            if (scanf("%u %u", &user_x, &user_y) != 2) { //Проверка на некорректный ввод
+                int c;
+                while ((c = getchar()) != '\n' && c != EOF);
+                puts("Wrong input, enter again (x y):");
+                continue;
+            }
 
-            if((user_x != 0 && user_y != 0) && (user_y <= size && user_x <= size)){ // Прием координат с единицы
-                --user_y; --user_x;
-                if(board_state[user_y][user_x] == 0){ // У тебя в двумерном массиве сначала выбор строки потом столбца, поэтому по сути стейт имеет вид state[y][x]
-                    board_state[user_y][user_x] = 1;
+            if((user_y != 0 && user_x != 0) && (user_x <= size && user_y <= size)){ // Прием координат с единицы
+                if(board_state[user_y - 1][user_x - 1] == 0){ // У тебя в двумерном массиве сначала выбор строки потом столбца, поэтому по сути стейт имеет вид state[y][x]
+                    board_state[user_y - 1][user_x - 1] = 1;
                     break;
                 }
                 else{
@@ -158,15 +168,16 @@ int main(){
         }
 
 
-        if (is_end(size, board_state)){
-            ended = 1;
+        int winner = is_end(size, board_state);
+        if (winner){
+            ended = true;
             clear_terminal();
-            puts("You won!");
+            puts(winner == 1 ? "You won!" : "Bot won!");
             break;
         }
-        
+
         if (is_draw(size, board_state)){
-            ended = 1;
+            ended = true;
             clear_terminal();
             puts("Draw!");
             break;
@@ -174,21 +185,24 @@ int main(){
 
 
         bot_move(size, board_state);
-        if (is_end(size, board_state)){
-            ended = 1;
+        winner = is_end(size, board_state);
+        if (winner){
+            ended = true;
             clear_terminal();
-            puts("Bot won!");
+            puts(winner == 1 ? "You won!" : "Bot won!");
             break;
         }
 
         if (is_draw(size, board_state)){
-            ended = 1;
+            ended = true;
             clear_terminal();
             puts("Draw!");
             break;
         }
 
     }
-        
+
+
     draw_board(size, board_state);
+    return 0;
 }
