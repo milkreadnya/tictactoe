@@ -1,36 +1,27 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include <stdlib.h>
-#include <time.h>
+
+
+unsigned g_prng_state = 0x4AF7484Bu;
 
 
 void draw_board(unsigned size, unsigned state[size][size]){
-    printf("   ");
-    for(unsigned col = 0; col < size; col++){
-        printf("%-2u", col + 1);
-    }
-    putchar('\n');
-
-    for(unsigned row = 0; row < size; row++){
-        printf("%-2u ", size - row);
-
-        for(unsigned col = 0; col < size; col++){
-            switch(state[row][col]){
+    for(unsigned y = 0; y < size; y++){
+        for(unsigned x = 0; x < size; x++){
+            switch(state[y][x]){
                 case 1:
-                    putchar('X');
-                    putchar(' ');
+                    printf("%c ", 'X');
                     break;
                 case 2:
-                    putchar('0');
-                    putchar(' ');
+                    printf("%c ", '0');
                     break;
                 default:
-                    putchar('.');
-                    putchar(' ');
+                    printf("%c ", '.');
             }
+
         }
-        putchar('\n');
+        printf("\n");
     }
 }
 
@@ -40,31 +31,31 @@ void clear_terminal(){
 }
 
 int prng(unsigned size){
-    return rand() % size;
+    g_prng_state = (0xB7BF48FFu * g_prng_state + 0x133B7101u);
+    return (g_prng_state >> 16) % size;
 }
 
-// 0 — нет конца, 1 — победил игрок, 2 — победил бот // вайбкод
 int is_end(unsigned size, unsigned state[size][size]) {
-    for (unsigned row = 0; row < size; row++) {
-        unsigned first = state[row][0];
+    for (unsigned y = 0; y < size; y++) {
+        unsigned first = state[y][0];
         if (first == 0) continue;
 
         int win = 1;
-        for (unsigned col = 1; col < size; col++) {
-            if (state[row][col] != first) {
+        for (unsigned x = 1; x < size; x++) {
+            if (state[y][x] != first) {
                 win = 0;
                 break;
             }
         }
         if (win) return first;
     }
-    for (unsigned col = 0; col < size; col++) {
-        unsigned first = state[0][col];
+    for (unsigned x = 0; x < size; x++) {
+        unsigned first = state[0][x];
         if (first == 0) continue;
 
         int win = 1;
-        for (unsigned row = 1; row < size; row++) {
-            if (state[row][col] != first) {
+        for (unsigned y = 1; y < size; y++) {
+            if (state[y][x] != first) {
                 win = 0;
                 break;
             }
@@ -97,9 +88,9 @@ int is_end(unsigned size, unsigned state[size][size]) {
 }
 
 int is_draw(unsigned size, unsigned state[size][size]){
-    for(unsigned row = 0; row < size; row++){
-        for(unsigned col = 0; col < size; col++){
-            if(state[row][col] == 0){
+    for(unsigned y = 0; y < size; y++){
+        for(unsigned x = 0; x < size; x++){
+            if(state[y][x] == 0){
                 return 0;
             }
         }
@@ -108,35 +99,28 @@ int is_draw(unsigned size, unsigned state[size][size]){
 }
 
 void bot_move(unsigned size, unsigned state[size][size]){
-    unsigned free_count = 0;
-    for (unsigned row = 0; row < size; row++)
-        for (unsigned col = 0; col < size; col++)
-            if (state[row][col] == 0) free_count++;
-
-    if (free_count == 0) return;
-
-    unsigned pick = prng(free_count);
-    for (unsigned row = 0; row < size; row++)
-        for (unsigned col = 0; col < size; col++)
-            if (state[row][col] == 0 && pick-- == 0) {
-                state[row][col] = 2;
-                return;
-            }
+    while(true){
+        unsigned x = prng(size);
+        unsigned y = prng(size);
+        if (state[y][x] == 0){
+            state[y][x] = 2;
+            break;
+        }
+    }
 }
 
 int main(){
-
-    srand(time(NULL));
 
     unsigned size = 0;
     bool ended = false;
 
 
     clear_terminal();
-    puts("Enter size of the board (2-1000):");
-    if (scanf("%u", &size) != 1 || size < 2 || size > 1000) {
-        puts("Wrong size");
-        return 1;
+    puts("Enter size of the board (2-10):");
+    while(true) {
+        if (scanf("%u", &size) != 1 || size < 2 || size > 10) {
+            puts("Wrong size, please try again:");
+        } else break;
     }
 
     unsigned board_state[size][size];
@@ -148,29 +132,28 @@ int main(){
         draw_board(size, board_state);
 
         unsigned user_x = 0, user_y = 0;
-        puts("Enter you move coordinates (x y)");
+        puts("Enter you move coordinates (format:x y):");
 
         while(true){
-            if (scanf("%u %u", &user_x, &user_y) != 2) { //Проверка на некорректный ввод
+            if (scanf("%u %u", &user_x, &user_y) != 2) {
                 int c;
                 while ((c = getchar()) != '\n' && c != EOF);
-                puts("Wrong input, enter again (x y):");
+                puts("Wrong input, please try again (format:x y):");
                 continue;
             }
 
-            if((user_y != 0 && user_x != 0) && (user_x <= size && user_y <= size)){ // Прием координат с единицы, y снизу вверх
-                unsigned row = size - user_y; // инверсия: y=size — верх, y=1 — низ
-                unsigned col = user_x - 1;
-                if(board_state[row][col] == 0){
-                    board_state[row][col] = 1;
+            if((user_y != 0 && user_x != 0) && (user_x <= size && user_y <= size)){
+                user_x--;user_y--;
+                if(board_state[user_y][user_x] == 0){
+                    board_state[user_y][user_x] = 1;
                     break;
                 }
                 else{
-                    puts("Wrong coordinates (entered grid cell already filled), enter again (x y):");
+                    puts("Wrong coordinates (entered grid cell already filled), please try again (format:x y):");
                 }
             }
             else{
-                puts("Wrong coordinates (out of grid), enter again (x y):");
+                puts("Wrong coordinates (out of grid), please try again (format:x y):");
             }
         }
 
