@@ -11,17 +11,20 @@ void draw_board(unsigned size, unsigned state[size][size]){
         for(unsigned x = 0; x < size; x++){
             switch(state[y][x]){
                 case 1:
-                    printf("%c ", 'X');
+                    putchar('X');
+                    putchar(' ');
                     break;
                 case 2:
-                    printf("%c ", '0');
+                    putchar('0');
+                    putchar(' ');
                     break;
                 default:
-                    printf("%c ", '.');
+                    putchar('.');
+                    putchar(' ');
             }
 
         }
-        printf("\n");
+        putchar('\n');
     }
 }
 
