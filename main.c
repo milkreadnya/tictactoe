@@ -113,7 +113,19 @@ int main(){
 
     unsigned size = 0;
     bool ended = false;
+    int mode = 0;
 
+    clear_terminal();
+    puts("Select game mode:");
+    puts("1 - Player vs Player");
+    puts("2 - Player vs Bot");
+    while(true) {
+        if (scanf("%d", &mode) != 1 || (mode != 1 && mode != 2)) {
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF);
+            puts("Wrong mode, please try again (1 or 2):");
+        } else break;
+    }
 
     clear_terminal();
     puts("Enter size of the board (2-10):");
@@ -127,12 +139,20 @@ int main(){
 
     memset(board_state, 0, sizeof(board_state));
 
+    unsigned current_player = 1;
+
     while(!ended){
         clear_terminal();
         draw_board(size, board_state);
 
         unsigned user_x = 0, user_y = 0;
-        puts("Enter you move coordinates (format:x y):");
+
+        if (mode == 1) {
+            printf("Player %u (%c), enter your move coordinates (format:x y):\n",
+                   current_player, current_player == 1 ? 'X' : '0');
+        } else {
+            puts("Enter you move coordinates (format:x y):");
+        }
 
         while(true){
             if (scanf("%u %u", &user_x, &user_y) != 2) {
@@ -145,7 +165,7 @@ int main(){
             if((user_y != 0 && user_x != 0) && (user_x <= size && user_y <= size)){
                 user_x--;user_y--;
                 if(board_state[user_y][user_x] == 0){
-                    board_state[user_y][user_x] = 1;
+                    board_state[user_y][user_x] = current_player;
                     break;
                 }
                 else{
@@ -157,12 +177,15 @@ int main(){
             }
         }
 
-
         int winner = is_end(size, board_state);
         if (winner){
             ended = true;
             clear_terminal();
-            puts(winner == 1 ? "You won!" : "Bot won!");
+            if (mode == 1) {
+                printf("Player %d (%c) won!\n", winner, winner == 1 ? 'X' : '0');
+            } else {
+                puts(winner == 1 ? "You won!" : "Bot won!");
+            }
             break;
         }
 
@@ -173,25 +196,26 @@ int main(){
             break;
         }
 
+        if (mode == 2) {
+            bot_move(size, board_state);
+            winner = is_end(size, board_state);
+            if (winner){
+                ended = true;
+                clear_terminal();
+                puts(winner == 1 ? "You won!" : "Bot won!");
+                break;
+            }
 
-        bot_move(size, board_state);
-        winner = is_end(size, board_state);
-        if (winner){
-            ended = true;
-            clear_terminal();
-            puts(winner == 1 ? "You won!" : "Bot won!");
-            break;
+            if (is_draw(size, board_state)){
+                ended = true;
+                clear_terminal();
+                puts("Draw!");
+                break;
+            }
+        } else {
+            current_player = (current_player == 1) ? 2 : 1;
         }
-
-        if (is_draw(size, board_state)){
-            ended = true;
-            clear_terminal();
-            puts("Draw!");
-            break;
-        }
-
     }
-
 
     draw_board(size, board_state);
     return 0;
