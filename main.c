@@ -38,7 +38,7 @@ int prng(unsigned size){
     return rand() % size;
 }
 
-// 0 — нет конца, 1 — победил игрок, 2 — победил бот - вайбкод
+// 0 — нет конца, 1 — победил игрок, 2 — победил бот // вайбкод
 int is_end(unsigned size, unsigned state[size][size]) {
     for (unsigned row = 0; row < size; row++) {
         unsigned first = state[row][0];
@@ -143,7 +143,7 @@ int main(){
         draw_board(size, board_state);
 
         unsigned user_x = 0, user_y = 0;
-        puts("Enter you move coordinates (x y):");
+        puts("Enter you move coordinates (x y)");
 
         while(true){
             if (scanf("%u %u", &user_x, &user_y) != 2) { //Проверка на некорректный ввод
@@ -153,9 +153,11 @@ int main(){
                 continue;
             }
 
-            if((user_y != 0 && user_x != 0) && (user_x <= size && user_y <= size)){ // Прием координат с единицы
-                if(board_state[user_y - 1][user_x - 1] == 0){ // У тебя в двумерном массиве сначала выбор строки потом столбца, поэтому по сути стейт имеет вид state[y][x]
-                    board_state[user_y - 1][user_x - 1] = 1;
+            if((user_y != 0 && user_x != 0) && (user_x <= size && user_y <= size)){ // Прием координат с единицы, y снизу вверх
+                unsigned row = size - user_y; // инверсия: y=size — верх, y=1 — низ
+                unsigned col = user_x - 1;
+                if(board_state[row][col] == 0){
+                    board_state[row][col] = 1;
                     break;
                 }
                 else{
