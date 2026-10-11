@@ -5,11 +5,17 @@
 #include <time.h>
 
 
-
 void draw_board(unsigned size, unsigned state[size][size]){
+    printf("   ");
+    for(unsigned col = 0; col < size; col++){
+        printf("%-2u", col + 1);
+    }
+    putchar('\n');
+
     for(unsigned row = 0; row < size; row++){
+        printf("%-2u ", size - row);
+
         for(unsigned col = 0; col < size; col++){
-            // вывод
             switch(state[row][col]){
                 case 1:
                     putchar('X');
@@ -23,7 +29,6 @@ void draw_board(unsigned size, unsigned state[size][size]){
                     putchar('.');
                     putchar(' ');
             }
-
         }
         putchar('\n');
     }
