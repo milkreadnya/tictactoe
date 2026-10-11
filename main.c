@@ -5,7 +5,7 @@
 
 
 unsigned g_prng_state = 0x4AF7484Bu;
-
+typedef enum { ONGOING, PLAYER_WIN, BOT_WIN, DRAW } GameState;
 
 
 void draw_board(unsigned size, unsigned state[size][size]){
@@ -100,16 +100,20 @@ int is_draw(unsigned size, unsigned state[size][size]){
     return 1;
 }
 
-void bot_move(unsigned size, unsigned state[size][size]){
-    // здесь можно сделать продвинутую логику ходов (при желании) 
-    while(1){
-        unsigned x = prng(size);
-        unsigned y = prng(size);
-        if (state[x][y] == 0){
-            state[x][y] = 2;
-            break;
-        }
-    }
+void bot_move(unsigned size, unsigned state[size][size]) {
+    unsigned free_count = 0;
+    for (unsigned i = 0; i < size; i++)
+        for (unsigned j = 0; j < size; j++)
+            if (state[i][j] == 0) free_count++;
+    if (free_count == 0) return;
+
+    unsigned pick = prng(free_count);
+    for (unsigned i = 0; i < size; i++)
+        for (unsigned j = 0; j < size; j++)
+            if (state[i][j] == 0 && pick-- == 0) {
+                state[i][j] = 2;
+                return;
+            }
 }
 
 int main(){
@@ -126,7 +130,6 @@ int main(){
         } else break;
     }
     unsigned board_state[size][size];
-    
     memset(board_state, 0, sizeof(board_state));
 
     while(!ended){
@@ -186,7 +189,6 @@ int main(){
         }
 
     }
-        
         
     draw_board(size, board_state);
 }
